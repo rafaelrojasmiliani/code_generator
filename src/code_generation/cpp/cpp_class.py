@@ -98,7 +98,8 @@ class CppClass(CppLanguageElement):
             self.is_override = False
             self.is_final = False
             self.arguments = []
-            self.implementation_handle = properties.get('implementation_handle')
+            self.implementation_handle = properties.get(
+                'implementation_handle')
             self.documentation = properties.get('documentation')
 
             # check properties
@@ -175,31 +176,43 @@ class CppClass(CppLanguageElement):
             Check whether attributes compose a correct C++ code
             """
             if self.is_inline and (self.is_virtual or self.is_pure_virtual):
-                raise ValueError(f'Inline method {self.name} could not be virtual')
+                raise ValueError(
+                    f'Inline method {self.name} could not be virtual')
             if self.is_constexpr and (self.is_virtual or self.is_pure_virtual):
-                raise ValueError(f'Constexpr method {self.name} could not be virtual')
+                raise ValueError(
+                    f'Constexpr method {self.name} could not be virtual')
             if self.is_const and self.is_static:
-                raise ValueError(f'Static method {self.name} could not be const')
+                raise ValueError(
+                    f'Static method {self.name} could not be const')
             if self.is_const and self.is_virtual:
-                raise ValueError(f'Virtual method {self.name} could not be const')
+                raise ValueError(
+                    f'Virtual method {self.name} could not be const')
             if self.is_const and self.is_pure_virtual:
-                raise ValueError(f'Pure virtual method {self.name} could not be const')
+                raise ValueError(
+                    f'Pure virtual method {self.name} could not be const')
             if self.is_override and not self.is_virtual:
-                raise ValueError(f'Override method {self.name} should be virtual')
+                raise ValueError(
+                    f'Override method {self.name} should be virtual')
             if self.is_inline and (self.is_virtual or self.is_pure_virtual):
-                raise ValueError(f'Inline method {self.name} could not be virtual')
+                raise ValueError(
+                    f'Inline method {self.name} could not be virtual')
             if self.is_final and not self.is_virtual:
                 raise ValueError(f'Final method {self.name} should be virtual')
             if self.is_static and self.is_virtual:
-                raise ValueError(f'Static method {self.name} could not be virtual')
+                raise ValueError(
+                    f'Static method {self.name} could not be virtual')
             if self.is_pure_virtual and not self.is_virtual:
-                raise ValueError(f'Pure virtual method {self.name} is also a virtual method')
+                raise ValueError(
+                    f'Pure virtual method {self.name} is also a virtual method')
             if not self.ref_to_parent:
-                raise ValueError(f'Method {self.name} object must be a child of CppClass')
+                raise ValueError(
+                    f'Method {self.name} object must be a child of CppClass')
             if self.is_constexpr and self.implementation_handle is None:
-                raise ValueError(f'Method {self.name} object must be initialized when "constexpr"')
+                raise ValueError(
+                    f'Method {self.name} object must be initialized when "constexpr"')
             if self.is_pure_virtual and self.implementation_handle is not None:
-                raise ValueError(f'Pure virtual method {self.name} could not be implemented')
+                raise ValueError(
+                    f'Pure virtual method {self.name} could not be implemented')
 
         def add_argument(self, argument):
             """
@@ -294,7 +307,8 @@ class CppClass(CppLanguageElement):
             self._sanity_check()
 
             if self.implementation_handle is None:
-                raise RuntimeError(f'No implementation handle for the method {self.name}')
+                raise RuntimeError(
+                    f'No implementation handle for the method {self.name}')
 
             if self.documentation and not self.is_constexpr:
                 cpp(dedent(self.documentation))
@@ -334,6 +348,12 @@ class CppClass(CppLanguageElement):
         # class enums
         self.internal_enum_elements = []
 
+        # class using type definitions
+        self.internal_enum_elements = []
+
+        # class using type definitions
+        self.internal_using_type_elements = []
+
     def _parent_class(self):
         """
         @return: parent class object
@@ -354,6 +374,13 @@ class CppClass(CppLanguageElement):
         """
         enum.ref_to_parent = self
         self.internal_enum_elements.append(enum)
+
+    def add_using_type(self, using):
+        """
+        @param: enum CppEnum instance
+        """
+        using.ref_to_parent = self
+        self.internal_using_type_elements.append(using)
 
     def add_variable(self, cpp_variable, is_private=True):
         """
@@ -409,6 +436,15 @@ class CppClass(CppLanguageElement):
         """
         for enumItem in self.internal_enum_elements:
             enumItem.render_to_string(cpp)
+            cpp.newline()
+
+    def _render_using_type_section(self, cpp):
+        """
+        Render to string all contained enums
+        Method is protected as it is used by CppClass only
+        """
+        for using_typeItem in self.internal_using_type_elements:
+            using_typeItem.render_to_string(cpp)
             cpp.newline()
 
     def _render_private_variables_declaration(self, cpp):
@@ -494,6 +530,7 @@ class CppClass(CppLanguageElement):
         Should be placed in 'public:' section
         """
         self._render_enum_section(cpp)
+        self._render_using_type_section(cpp)
         self._render_internal_classes_declaration(cpp)
         self._render_methods_declaration(cpp)
         self._render_public_variables_declaration(cpp)
